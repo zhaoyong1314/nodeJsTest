@@ -1,37 +1,23 @@
 var express = require('express');
 var router = express.Router();
+var mongoose = require('mongoose');
+var Movie = require('../models/movie');
+var _ = require('underscore');
 
+mongoose.connect('mongodb://localhost/test');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'imooc 首页',
-   movies:[{
-     title:'机械战警',
-     _id:1,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   },{
-     title:'机械战警',
-     _id:2,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   },{
-     title:'机械战警',
-     _id:3,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   },{
-     title:'机械战警',
-     _id:4,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   },{
-     title:'机械战警',
-     _id:5,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   },{
-     title:'机械战警',
-     _id:6,
-     poster:"http://data.movie.kankan.com/movie/74105?id=751033"
-   }
-   ]});
-  });
+  Movie.fetch(function(err,movie){
+     if(err){
+        console.log(err);
+     }
+    res.render('index', {
+      title: 'test首页',
+      movies:movies
+    })
+  })
+});
 
 /* GET admin page  */
 router.get("/admin",function(req,res){
@@ -48,17 +34,70 @@ router.get("/admin",function(req,res){
   }});
 });
 
+//admin update movie
+router.get("/admin/update/:id",function(req,res){
+   var id = req.params.id;
+  if(id){
+   Movie.findById(id,function(err,movie){
+      res.render('admin',{
+        title:'后台更新页',
+        movie:movie
+      })
+   });
+  }
+});
+
+
+
+//admin post movie
+router.post('/admin/movie/new',function(req,res){
+  var  id = req.body.movie._id;
+  var movieObj = req.body.movie;
+  var _movie ;
+  if(id!='undefined'){
+    Movie.findById(id,function(err,movie){
+     if(err){
+       console.log(err);
+     }
+      _movie= _.extend(movie,movieObj);
+      _movie.save(function(err,movie){
+        if(err){
+          console.log(err);
+        }
+        res.redirect('/movie/'+movie._id)
+      });
+    });
+  }
+  else{
+    _movie = new Movie({
+      doctor:movieObj.doctor,
+      title:movieObj.title,
+      country:movieObj.country,
+      language:movieObj.language,
+      year:movieObj.year,
+      poster:movieObj.poster,
+      summary:movieObj.summary,
+      flash:movieObj.flash
+    })
+    _movie.save(err,function(){
+        if(err){
+          console.log(err);
+        }
+      res.redirect('/movie/'+ movie._id)
+    })
+    }
+});
+
 router.get("/admin/list",function(req,res){
-  res.render('list', {title:'imooc 列表页',
-    movie:{
-      doctor:'何塞.帕蒂里亚',
-      counter:'美国',
-      title:'机械战警',
-      _di:1,
-      year:2014,
-      language:'英语',
-      flash:'www.baidu.com'
-    }});
+  Movie.fetch(function(err,movies){
+    if(err){
+      console.log(err);
+    }
+    res.render('list', {
+          title:'imooc 列表页',
+          movies:movies
+        });
+    })
 });
 
 module.exports = router;
